@@ -1,3 +1,13 @@
+// Gtk 3 is needed to build this code
+//
+// percolation.c
+// by Juan Keymer
+//
+// to compile type:
+// gcc percolation.c -Wall -o percolate `pkg-config --cflags gtk+-3.0` `pkg-config --libs>
+//
+//  or just use the makefile
+//
 // LIBS
 #include <gtk/gtk.h> 	        // GUI, Gtk Lib
 #include "mt64.h"				// Pseudo Random Number Generation 64bit MT Lib	
@@ -11,7 +21,7 @@
 #define Y_SIZE 256
 
 // STRUCTURE with the DATA
-struct simulation
+struct percolation_map
 	{
 	int lattice_configuration[X_SIZE][Y_SIZE];      // Latice configuration
 	float  percolation_probability;
@@ -56,6 +66,38 @@ static void paint_lattice (gpointer data)
 	g_object_unref(p);
 	}
 
+
+// CALL BACK to initialize the lattice button click
+static void percolate_lattice(GtkWidget *widget, gpointer data)
+        {
+        int x,y;
+        //Start with en empty lattice
+        for (x = 0; x < X_SIZE; x++)
+                for (y = 0; y < Y_SIZE; y++) s.lattice_configuration[x][y]=0;
+//                        s.occupancy = 0;
+
+           // Initialize with a  10% lattice occupancy at random
+                               for (x = 0; x < X_SIZE; x++)
+                for (y = 0; y < Y_SIZE; y++) 
+                                if(genrand64_real2()<0.1){s.lattice_configuration[x][y]=1;}
+
+paint_lattice (data);
+}
+
+
+
+//  CALL BACK to respond Gtk SCALE SLIDE move event
+static void probability_scale_moved (GtkRange *range, gpointer  user_data)
+        {
+        GtkWidget *label = user_data;
+        gdouble pos = gtk_range_get_value (range);
+        s.percolation_probability = (float) pos;
+        gchar *str = g_strdup_printf ("probability = %.2f", pos);
+        gtk_label_set_text (GTK_LABEL (label), str);
+        g_free(str);
+        }
+
+	
 
 
 
@@ -119,7 +161,10 @@ static void activate (GtkApplication *app, gpointer user_data)
 	// -----    MAP BUTTON   -----
 	button = gtk_button_new_with_label ("Map");
 	//g_signal_connect (button, "clicked", G_CALLBACK (init_lattice), GTK_IMAGE(image_lattice)); 
+	g_signal_connect (button, "clicked", G_CALLBACK (percolate_lattice), GTK_IMAGE(image_lattice)); 
 	gtk_grid_attach (GTK_GRID (grid), button, 0, 3, 1, 1); // position (0,3) spanning 1 col and 1 raw) 
+
+
 	// -----   CLUSTERS BUTTON   -----
 	button = gtk_button_new_with_label ("Clusters");
 	//g_signal_connect (button, "clicked", G_CALLBACK (start_simulation), GTK_IMAGE(image_lattice));
