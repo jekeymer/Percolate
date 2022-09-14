@@ -14,17 +14,26 @@
 #include <math.h>				// math to transform random n from continuos to discrete
 #include <time.h>				// time library to initialize random generator with time seed
 
+// To analyze clusters we use Tobin's implementation of the Union-Find algorithm
+// https://gist.github.com/tobin/909424
+# include "myHK.h"
+
 
 
 // MACROS						// to later defince a 2D Latice of 256
 #define X_SIZE 256
 #define Y_SIZE 256
+// are need to know  if the map has been initialized
+//#define FALSE 0
+//#define TRUE 1
 
 // STRUCTURE with the DATA
 struct percolation_map
 	{
 	int lattice_configuration[X_SIZE][Y_SIZE];      // Latice configuration
+	int cluster_configuration[X_SIZE][Y_SIZE];	// Cluster IDs
 	float  percolation_probability;
+	int initialized;
 	} s;	// instance s of the structure to hold the simulation
 
 
@@ -46,11 +55,12 @@ static void paint_a_background (gpointer data)
 	g_object_unref(p);
 	}
 
+
 // Function to paint lattice DATA into a pixbuffer
 static void paint_lattice (gpointer data)
 	{
    	GdkPixbuf *p;
-	p = gdk_pixbuf_new(GDK_COLORSPACE_RGB, 0, 8, X_SIZE, Y_SIZE);
+	p = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, X_SIZE, Y_SIZE);
 	// Paint the lattice configuration to a pixbuffer
 	int x,y;
 	for (x = 0; x < X_SIZE; x++)
@@ -67,6 +77,33 @@ static void paint_lattice (gpointer data)
 	}
 
 
+static void paint_clusters (gpointer data)
+        {
+        GdkPixbuf *p;
+        p = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, X_SIZE, Y_SIZE);
+        // Paint the lattice configuration to a pixbuffer
+        int x,y;
+        for (x = 0; x < X_SIZE; x++)
+                for (y = 0; y < Y_SIZE; y++)
+                        if(s.cluster_configuration[x][y]==0)
+                                // VACANCY is painted WHITE
+                                {put_pixel(p, (int)x, (int)y, (guchar)255, (guchar)255, (guchar)255, 255);
+                                }else{
+				int ID_value = s.cluster_configuration[x][y];
+                                // OCCUPANCY is painted BLACK
+                                put_pixel(p, (int)x, (int)y, 
+	(guchar)(ID_value), 
+	(guchar)(ID_value%255), 
+	(guchar)(ID_value + ID_value%255), 
+	(ID_value%64));
+                                }
+        gtk_image_set_from_pixbuf(GTK_IMAGE(data), GDK_PIXBUF(p));
+        g_object_unref(p);
+        }
+
+
+
+
 // CALL BACK to initialize the lattice button click
 static void percolate_lattice(GtkWidget *widget, gpointer data)
         {
@@ -74,14 +111,14 @@ static void percolate_lattice(GtkWidget *widget, gpointer data)
         //Start with en empty lattice
         for (x = 0; x < X_SIZE; x++)
                 for (y = 0; y < Y_SIZE; y++) s.lattice_configuration[x][y]=0;
-//                        s.occupancy = 0;
 
            // Initialize with a  10% lattice occupancy at random
                                for (x = 0; x < X_SIZE; x++)
                 for (y = 0; y < Y_SIZE; y++) 
                                 if(genrand64_real2() < s.percolation_probability){s.lattice_configuration[x][y]=1;}
-paint_lattice (data);
-}
+	paint_lattice (data);
+	s.initialized = TRUE;
+	}
 
 
 
@@ -96,27 +133,73 @@ static void probability_scale_moved (GtkRange *range, gpointer  user_data)
         g_free(str);
         }
 
-	
+
+
+// CALL BACK to  apply the Hoshen-Kopelman algorithm and get the cluster distro
+// for this we
+// #include "myHK.h" to implement the functions needed to act upon **matrix of nxm.
+static void clusterize_lattice(GtkWidget *widget, gpointer data)
+        {
+        // To holds the matrix data to use as imput
+        int m,n;
+        int **matrix;
+        m = (int)Y_SIZE; n = (int) X_SIZE;
+
+	if(s.initialized)
+		{
+		// allocate memory for the matrix
+        	matrix = (int **)calloc(m, sizeof(int*));
+        	for (int i=0; i<m; i++)
+                	matrix[i] = (int *)calloc(n, sizeof(int));
+		// scan matrix
+        	for (int i=0; i<m; i++)
+			{
+                	for (int j=0; j<n; j++)
+                        matrix[i][j] = s.lattice_configuration[i][j];
+                	}
+		printf("Lattice configuration read\n");
+		int clusters = hoshen_kopelman(matrix,m,n);
+		printf("Hoshen-Kopelman applied\n");
+		// realease the labels are ok.
+	        // heavy on asserts
+        	// check_labelling(matrix,m,n);
+
+ 		printf("HK reports %d clusters found\n", clusters); 
+		//transfer the matrix to lattice_confirguration 
+		for (int i=0; i<m; i++)
+                        for (int j=0; j<n; j++)
+                                        s.cluster_configuration[j][i] = (int) matrix[i][j];
+		// Free all memory allocated
+                for (int i=0; i<m; i++)
+                        free(matrix[i]);
+                free(matrix);
+		}
+	 //set flag
+        s.initialized = FALSE;
+	paint_clusters(data);
+	}
 
 
 
 // HERE GOES THE ABOUT DIALOG BOX For info at a website: lab wiki on the contact process
-static void show_about(GtkWidget *widget, gpointer data) 
+static void show_about(GtkWidget *widget, gpointer data)
         {
         GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file("kimero_LAB_transparent.tiff", NULL);
-        GtkWidget *dialog = gtk_about_dialog_new(); 
+        GtkWidget *dialog = gtk_about_dialog_new();
         gtk_about_dialog_set_program_name (GTK_ABOUT_DIALOG(dialog),
-                                  "Percolate map  Application");     
-        gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "v 0.0.1, 2022"); 
+                                  "Percolate map  Application");
+        gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "v 0.0.1, 2022");
         gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog),"Open Source Code");
-        gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), 
-     "A Percolation map: lattice sites are on with a given probability");
+        gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog),
+	     		"A Percolation map: lattice sites are on with a given probability");
         gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(dialog), "https://github.com/jekeymer");
         gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), pixbuf);
-        g_object_unref(pixbuf), pixbuf = NULL;          
+        g_object_unref(pixbuf), pixbuf = NULL;
         gtk_dialog_run(GTK_DIALOG (dialog));
         gtk_widget_destroy(dialog);
         }
+
+
 
 
 
@@ -139,8 +222,8 @@ static void activate (GtkApplication *app, gpointer user_data)
 
 
 	//define default parameters of the map
-	s.percolation_probability = 0.0; // Richardson tumor growth model
-
+	s.percolation_probability = 0.2; // Richardson tumor growth model
+	s.initialized = FALSE;
 
 	/* Create a new WINDOW, and set its title */
 	window = gtk_application_window_new (app);
@@ -159,7 +242,7 @@ static void activate (GtkApplication *app, gpointer user_data)
 	// SCALE SLIDE BAR to set and LABEL display  mortality
 	probability_scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL,0,1,0.01);
 	probability_label = gtk_label_new ("probability"); /* LABEL to be shown probability*/
-
+	gtk_range_set_value(GTK_RANGE(probability_scale),0.2);
         g_signal_connect (probability_scale,"value-changed", G_CALLBACK (probability_scale_moved), probability_label);
 
 
@@ -175,34 +258,35 @@ static void activate (GtkApplication *app, gpointer user_data)
 	image_lattice = gtk_image_new_from_pixbuf(pixbuf);
 	paint_a_background(image_lattice);
         /* we pack the image into the grid */
-	gtk_grid_attach (GTK_GRID (grid), image_lattice, 0, 1, 5, 1); 
-	// position (0,1) spanning 5 col and 1 raw) 
+	gtk_grid_attach (GTK_GRID (grid), image_lattice, 0, 1, 5, 1);
+	// position (0,1) spanning 5 col and 1 raw)
 
 	//separator
 	separator = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
-	gtk_grid_attach (GTK_GRID (grid), separator, 0, 2, 5, 1); 
+	gtk_grid_attach (GTK_GRID (grid), separator, 0, 2, 5, 1);
 	// Buttons
 	// -----    MAP BUTTON   -----
 	button = gtk_button_new_with_label ("Map");
-	//g_signal_connect (button, "clicked", G_CALLBACK (init_lattice), GTK_IMAGE(image_lattice)); 
-	g_signal_connect (button, "clicked", G_CALLBACK (percolate_lattice), GTK_IMAGE(image_lattice)); 
-	gtk_grid_attach (GTK_GRID (grid), button, 0, 3, 1, 1); // position (0,3) spanning 1 col and 1 raw) 
+	//g_signal_connect (button, "clicked", G_CALLBACK (init_lattice), GTK_IMAGE(image_lattice));
+	g_signal_connect (button, "clicked", G_CALLBACK (percolate_lattice), GTK_IMAGE(image_lattice));
+	gtk_grid_attach (GTK_GRID (grid), button, 0, 3, 1, 1); // position (0,3) spanning 1 col and 1 raw)
 
 
 	// -----   CLUSTERS BUTTON   -----
 	button = gtk_button_new_with_label ("Clusters");
 	//g_signal_connect (button, "clicked", G_CALLBACK (start_simulation), GTK_IMAGE(image_lattice));
+	g_signal_connect (button, "clicked", G_CALLBACK (clusterize_lattice), GTK_IMAGE(image_lattice));
 	gtk_grid_attach (GTK_GRID (grid), button, 1, 3, 1, 1); // position (1,3) spanning 1 col and 1 raw)
 
+	// ------- ABOUT BUTTON --------
 	button = gtk_button_new_with_label ("?");
-	
 	//g_signal_connect (button, "clicked", G_CALLBACK(show_about), GTK_WINDOW(window));
 	g_signal_connect (button, "clicked", G_CALLBACK(show_about), GTK_WINDOW(window));
 
 	// attach to grid
 	gtk_grid_attach (GTK_GRID (grid), button, 2, 3, 1, 1); // position (3,3) spanning 1 col and 1 raw)
 	//-------   QUIT BUTTON    ----
-	button = gtk_button_new_with_label ("Quit"); 
+	button = gtk_button_new_with_label ("Quit");
 	g_signal_connect_swapped (button, "clicked", G_CALLBACK (gtk_widget_destroy), window);
 	gtk_grid_attach (GTK_GRID (grid), button, 3, 3, 1, 1); // position (4,3) spanning 1 col and 1 raw)
 
