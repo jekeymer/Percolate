@@ -93,9 +93,9 @@ static void paint_clusters (gpointer data)
                                 // OCCUPANCY is painted BLACK
                                 put_pixel(p, (int)x, (int)y, 
 	(guchar)(ID_value), 
-	(guchar)(ID_value%255), 
-	(guchar)(ID_value + ID_value%255), 
-	(ID_value%64));
+	(guchar)(255-ID_value), 
+	(guchar)(ID_value + ID_value%16), 
+	(255));
                                 }
         gtk_image_set_from_pixbuf(GTK_IMAGE(data), GDK_PIXBUF(p));
         g_object_unref(p);
@@ -240,7 +240,7 @@ static void activate (GtkApplication *app, gpointer user_data)
 
 
 	// SCALE SLIDE BAR to set and LABEL display  mortality
-	probability_scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL,0,1,0.01);
+	probability_scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL,0,1,0.001);
 	probability_label = gtk_label_new ("probability"); /* LABEL to be shown probability*/
 	gtk_range_set_value(GTK_RANGE(probability_scale),0.2);
         g_signal_connect (probability_scale,"value-changed", G_CALLBACK (probability_scale_moved), probability_label);
