@@ -201,7 +201,7 @@ static void show_about(GtkWidget *widget, gpointer data)
         gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog),"Open Source Code");
         gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog),
 	     		"A Percolation map: lattice sites are on with a given probability");
-        gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(dialog), "https://github.com/jekeymer");
+        gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(dialog), "https://github.com/jekeymer/Percolate/wiki");
         gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), pixbuf);
         g_object_unref(pixbuf), pixbuf = NULL;
         gtk_dialog_run(GTK_DIALOG (dialog));
