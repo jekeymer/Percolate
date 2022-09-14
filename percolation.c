@@ -23,9 +23,8 @@
 // MACROS						// to later defince a 2D Latice of 256
 #define X_SIZE 256
 #define Y_SIZE 256
-// are need to know  if the map has been initialized
-//#define FALSE 0
-//#define TRUE 1
+
+#define DEFAULT_P 0.575
 
 // STRUCTURE with the DATA
 struct percolation_map
@@ -77,30 +76,40 @@ static void paint_lattice (gpointer data)
 	}
 
 
-static void paint_clusters (gpointer data)
+
+
+static void paint_clusters (int color_points, gpointer data)
         {
         GdkPixbuf *p;
         p = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, X_SIZE, Y_SIZE);
-        // Paint the lattice configuration to a pixbuffer
+	// define a super simple color gradient for all the color points (n clusters)
+	// read link for insight. written here, thanks to code there.
+	// https://stackoverflow.com/questions/20792445/calculate-rgb-value-for-a-range-of-values-to-create-heat-map
+	int r,g,b;
+        float ratio;
+        float min = (float) 1;
+	float max = (float) color_points;
+
+	// Paint the lattice configuration to a pixbuffer
         int x,y;
         for (x = 0; x < X_SIZE; x++)
                 for (y = 0; y < Y_SIZE; y++)
                         if(s.cluster_configuration[x][y]==0)
                                 // VACANCY is painted WHITE
-                                {put_pixel(p, (int)x, (int)y, (guchar)255, (guchar)255, (guchar)255, 255);
-                                }else{
-				int ID_value = s.cluster_configuration[x][y];
-                                // OCCUPANCY is painted BLACK
-                                put_pixel(p, (int)x, (int)y, 
-	(guchar)(ID_value), 
-	(guchar)(255-ID_value), 
-	(guchar)(ID_value + ID_value%16), 
-	(255));
+                                {put_pixel(p, (int)x, (int)y, (guchar)255, (guchar)255, (guchar)255, 0);
+                                }else{ // OCCUPANCY is painted  with cluster ID color gradient
+				// implementation of gradient (link above)
+				int value = s.cluster_configuration[x][y];
+		                ratio = 2 * (value-min) / (max - min);
+                		if (ratio < 1 ){b = (int)(255*(1 - ratio));}else{b=0;};
+                		if (ratio > 1 ){r = (int)(255*(ratio - 1));}else{r=0;};
+                		g = 255 - b - r;
+				// final paint
+                                put_pixel(p, (int)x, (int)y, (guchar)r , (guchar)g, (guchar)b, 255);
                                 }
         gtk_image_set_from_pixbuf(GTK_IMAGE(data), GDK_PIXBUF(p));
         g_object_unref(p);
         }
-
 
 
 
@@ -144,7 +153,7 @@ static void clusterize_lattice(GtkWidget *widget, gpointer data)
         int m,n;
         int **matrix;
         m = (int)Y_SIZE; n = (int) X_SIZE;
-
+	int clusters;
 	if(s.initialized)
 		{
 		// allocate memory for the matrix
@@ -158,7 +167,7 @@ static void clusterize_lattice(GtkWidget *widget, gpointer data)
                         matrix[i][j] = s.lattice_configuration[i][j];
                 	}
 		printf("Lattice configuration read\n");
-		int clusters = hoshen_kopelman(matrix,m,n);
+		clusters = hoshen_kopelman(matrix,m,n);
 		printf("Hoshen-Kopelman applied\n");
 		// realease the labels are ok.
 	        // heavy on asserts
@@ -173,10 +182,10 @@ static void clusterize_lattice(GtkWidget *widget, gpointer data)
                 for (int i=0; i<m; i++)
                         free(matrix[i]);
                 free(matrix);
+		paint_clusters(clusters, data);
 		}
 	 //set flag
         s.initialized = FALSE;
-	paint_clusters(data);
 	}
 
 
@@ -222,7 +231,7 @@ static void activate (GtkApplication *app, gpointer user_data)
 
 
 	//define default parameters of the map
-	s.percolation_probability = 0.2; // Richardson tumor growth model
+	s.percolation_probability = DEFAULT_P;
 	s.initialized = FALSE;
 
 	/* Create a new WINDOW, and set its title */
@@ -242,7 +251,7 @@ static void activate (GtkApplication *app, gpointer user_data)
 	// SCALE SLIDE BAR to set and LABEL display  mortality
 	probability_scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL,0,1,0.001);
 	probability_label = gtk_label_new ("probability"); /* LABEL to be shown probability*/
-	gtk_range_set_value(GTK_RANGE(probability_scale),0.2);
+	gtk_range_set_value(GTK_RANGE(probability_scale),DEFAULT_P);
         g_signal_connect (probability_scale,"value-changed", G_CALLBACK (probability_scale_moved), probability_label);
 
 
