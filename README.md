@@ -1,8 +1,6 @@
 Percolation App
 
-The App is an application of Percolation Theory in the square 2D lattice.
-
-https://en.wikipedia.org/wiki/Percolation_theory
+The App is an application of Percolation Theory in the (256 x 256) square 2D lattice using Gtk3 to generate a Gdk Pixbuffer.
 
 It implements the Hoshel-Kopelman algorithm,
 
