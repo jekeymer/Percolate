@@ -79,8 +79,7 @@ static void percolate_lattice(GtkWidget *widget, gpointer data)
            // Initialize with a  10% lattice occupancy at random
                                for (x = 0; x < X_SIZE; x++)
                 for (y = 0; y < Y_SIZE; y++) 
-                                if(genrand64_real2()<0.1){s.lattice_configuration[x][y]=1;}
-
+                                if(genrand64_real2() < s.percolation_probability){s.lattice_configuration[x][y]=1;}
 paint_lattice (data);
 }
 
@@ -92,12 +91,33 @@ static void probability_scale_moved (GtkRange *range, gpointer  user_data)
         GtkWidget *label = user_data;
         gdouble pos = gtk_range_get_value (range);
         s.percolation_probability = (float) pos;
-        gchar *str = g_strdup_printf ("probability = %.2f", pos);
+        gchar *str = g_strdup_printf ("p = %.2f", pos);
         gtk_label_set_text (GTK_LABEL (label), str);
         g_free(str);
         }
 
 	
+
+
+
+// HERE GOES THE ABOUT DIALOG BOX For info at a website: lab wiki on the contact process
+static void show_about(GtkWidget *widget, gpointer data) 
+        {
+        GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file("kimero_LAB_transparent.tiff", NULL);
+        GtkWidget *dialog = gtk_about_dialog_new(); 
+        gtk_about_dialog_set_program_name (GTK_ABOUT_DIALOG(dialog),
+                                  "Percolate map  Application");     
+        gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "v 0.0.1, 2022"); 
+        gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog),"Open Source Code");
+        gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), 
+     "A Percolation map: lattice sites are on with a given probability");
+        gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(dialog), "https://github.com/jekeymer");
+        gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), pixbuf);
+        g_object_unref(pixbuf), pixbuf = NULL;          
+        gtk_dialog_run(GTK_DIALOG (dialog));
+        gtk_widget_destroy(dialog);
+        }
+
 
 
 
@@ -139,6 +159,10 @@ static void activate (GtkApplication *app, gpointer user_data)
 	// SCALE SLIDE BAR to set and LABEL display  mortality
 	probability_scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL,0,1,0.01);
 	probability_label = gtk_label_new ("probability"); /* LABEL to be shown probability*/
+
+        g_signal_connect (probability_scale,"value-changed", G_CALLBACK (probability_scale_moved), probability_label);
+
+
 	// attach them to the grid
 	gtk_grid_attach (GTK_GRID (grid), probability_scale, 0, 0, 2, 1);
 	// position (0,0) spanning 2 col and 1 raw
@@ -171,7 +195,11 @@ static void activate (GtkApplication *app, gpointer user_data)
 	gtk_grid_attach (GTK_GRID (grid), button, 1, 3, 1, 1); // position (1,3) spanning 1 col and 1 raw)
 
 	button = gtk_button_new_with_label ("?");
+	
 	//g_signal_connect (button, "clicked", G_CALLBACK(show_about), GTK_WINDOW(window));
+	g_signal_connect (button, "clicked", G_CALLBACK(show_about), GTK_WINDOW(window));
+
+	// attach to grid
 	gtk_grid_attach (GTK_GRID (grid), button, 2, 3, 1, 1); // position (3,3) spanning 1 col and 1 raw)
 	//-------   QUIT BUTTON    ----
 	button = gtk_button_new_with_label ("Quit"); 
