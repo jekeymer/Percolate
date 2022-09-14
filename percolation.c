@@ -196,7 +196,7 @@ static void show_about(GtkWidget *widget, gpointer data)
         GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file("kimero_LAB_transparent.tiff", NULL);
         GtkWidget *dialog = gtk_about_dialog_new();
         gtk_about_dialog_set_program_name (GTK_ABOUT_DIALOG(dialog),
-                                  "Percolate map  Application");
+                                  "Percolation Map  Application");
         gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "v 0.0.1, 2022");
         gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog),"Open Source Code");
         gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog),
