@@ -22,7 +22,7 @@ https://www.ocf.berkeley.edu/~fricke/projects/hoshenkopelman/hoshenkopelman.html
 
 https://gist.github.com/tobin/909424
 
-The code from the gist link above, here it is mostly encapsulated in the "myHK.h" file.
+The code from the gist link above, here, it is mostly encapsulated in the "myHK.h" file.
 
 
 
