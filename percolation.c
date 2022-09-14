@@ -282,7 +282,7 @@ static void activate (GtkApplication *app, gpointer user_data)
 
 
 	// -----   CLUSTERS BUTTON   -----
-	button = gtk_button_new_with_label ("Clusters");
+	button = gtk_button_new_with_label ("Cluster");
 	//g_signal_connect (button, "clicked", G_CALLBACK (start_simulation), GTK_IMAGE(image_lattice));
 	g_signal_connect (button, "clicked", G_CALLBACK (clusterize_lattice), GTK_IMAGE(image_lattice));
 	gtk_grid_attach (GTK_GRID (grid), button, 1, 3, 1, 1); // position (1,3) spanning 1 col and 1 raw)
