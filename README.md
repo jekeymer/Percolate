@@ -2,6 +2,8 @@ Percolation App
 
 The App is an application of Percolation Theory in the square 2D lattice.
 
+https://en.wikipedia.org/wiki/Percolation_theory
+
 It implements the Hoshel-Kopelman algorithm,
 
 https://en.wikipedia.org/wiki/Hoshen%E2%80%93Kopelman_algorithm#Percolation_theory
