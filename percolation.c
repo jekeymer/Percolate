@@ -200,7 +200,7 @@ static void show_about(GtkWidget *widget, gpointer data)
         gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), "v 0.0.1, 2022");
         gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog),"Open Source Code");
         gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog),
-	     		"A Percolation map: lattice sites are on with a given probability");
+	     		"Percolation map: lattice sites are set to the active state (black) with a given probability p. If not, they remain inactive (white)");
         gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(dialog), "https://github.com/jekeymer/Percolate/wiki");
         gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), pixbuf);
         g_object_unref(pixbuf), pixbuf = NULL;
